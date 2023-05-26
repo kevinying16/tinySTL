@@ -716,7 +716,7 @@ namespace tinySTL {
         /*
          * 重载 [] 运算符 const重载
          */
-        reference operator[](size_type n) const {
+        const_reference operator[](size_type n) const {
             TINYSTL_DEBUG(n <= size_);
             if (n == size_) {
                 /* 末尾（尾迭代器）位置的值为value_type() */
@@ -737,7 +737,7 @@ namespace tinySTL {
         /*
          * 获取位置n出的字符 const重载
          */
-        reference at(size_type n) const {
+        const_reference at(size_type n) const {
             THROW_OUT_OF_RANGE_IF(n >= size_, "basic_string<Char, Traits>::at()"
                                               "subscript out of range");
             return (*this)[n];
@@ -1467,7 +1467,12 @@ namespace tinySTL {
             THROW_LENGTH_ERROR_IF(n > max_size(), "n can not larger than max_size()"
                                                   "in basic_string<Char,Traits>::reserve(n)");
             iterator new_buffer = data_allocator::allocate(n);
-            char_traits::move(new_buffer, buffer_, size_);
+            try{
+                char_traits::move(new_buffer, buffer_, size_);
+                data_allocator::deallocate(buffer_);
+            }catch(...){
+                data_allocator::deallocate(new_buffer);
+            }
             buffer_ = new_buffer;
             cap_ = n;
         }
@@ -1627,7 +1632,7 @@ namespace tinySTL {
     template<typename CharType, typename CharTraits>
     typename basic_string<CharType, CharTraits>::iterator // 返回值
     basic_string<CharType, CharTraits>::erase(const_iterator first, const_iterator last) {
-        if (first == begin(), last == end()) {
+        if (first == begin() && last == end()) {
             clear();
             return end();
         }
@@ -2369,6 +2374,7 @@ namespace tinySTL {
         iterator new_buffer = data_allocator::allocate(size);
         try {
             char_traits::move(new_buffer, buffer_, size);
+            data_allocator::deallocate(buffer_);
         }
         catch (...) {
             data_allocator::deallocate(new_buffer);
